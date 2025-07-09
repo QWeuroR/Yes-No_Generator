@@ -2,6 +2,7 @@ import random
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+import time
 
 class YesNoGenerator:
     def __init__(self):
@@ -10,8 +11,14 @@ class YesNoGenerator:
         self.counts = {"Yes": 0, "No": 0}
         self.yes_per = 0
         self.no_per = 0
+        self.gen_per_sec = 0
+        self.reset_per_sec = 0
+        self.start_time = time.time()
+        self.reset_start_time = time.time()
+        self.update_interval = 500  # Update every 500ms
 
         self.reset_counter = 0
+        self.SHOW_RESET = 69
 
         self.separator_row = 2
         self.text_row = 1
@@ -24,6 +31,11 @@ class YesNoGenerator:
         self.yes_per_label = None
         self.no_per_label = None
         self.message_text = None
+        self.reset_label = None
+        self.gen_per_sec_label = None
+        self.reset_per_sec_label = None
+
+        self.reset_flag = False
 
         self.output_fg = "black"
         self.output_bg = "#ffffff"
@@ -32,6 +44,7 @@ class YesNoGenerator:
         self.message_label = None
         self.welcome_msg = "Welcome to the Yes/No Generator!\nClick \"GENERATE\" to start."
         self.messages = [
+            "0. It is true. There is a message number 0.\n(It is on the 0th index, of a list, thats why it is 0.)",
             "1. This is a simple tool to help you make decisions.",
             "2. Remember, the decision is ultimately yours!",
             "3. Use with caution!",
@@ -57,9 +70,12 @@ class YesNoGenerator:
             "23. Are you \"the 10th programmer\"?.",
             "24. If you are still reading this, you might be procrastinating. Just click \"GENERATE\" already!",
             "25. The Yes/No Generator is not a therapist, but it can help you make decisions.",
-            "26. What if the generator outputs \"Maybe\"?",
+            "26. Created by QWeuroR, Štetka Štetkovič and Bacil Muchomúrka",
             "27. What is the purpose of \"RESET\" button?",
-            "28. "
+            "28. ",
+            "29. Recommend this tool to your friends, they might be indecisive too!",
+            "30. What if the generator outputs \"Maybe\"?",
+
                                               ]
         self.msg_separator = "\n_____________________________________\n"
 
@@ -71,7 +87,7 @@ class YesNoGenerator:
         root = tk.Tk()
         root.title("Yes/No Generator")
         # root.geometry("600x750")
-        root.minsize(500, 600)
+        root.minsize(500, 650)
         
         # Create a frame for better organization
         main_frame = tk.Frame(root)
@@ -83,6 +99,7 @@ class YesNoGenerator:
         STATS_HEADER_ROW = 3
         STATS_COUNT_ROW = 4
         STATS_PERCENT_ROW = 5
+        GPS_ROW = 6
 
         # button at the top
         btn = tk.Button(main_frame, text="GENERATE", command=self.update_label, font=("Arial", 18))
@@ -105,10 +122,10 @@ class YesNoGenerator:
         self.counter_label = tk.Label(main_frame, text="Counter: 0", font=("Arial", 14))
         self.counter_label.grid(row=STATS_COUNT_ROW, column=0, padx=10, pady=10)
 
-        self.Yes_count_label = tk.Label(main_frame, text="Yes Count: 0", font=("Arial", 14))
+        self.Yes_count_label = tk.Label(main_frame, text="Yes Counter: 0", font=("Arial", 14))
         self.Yes_count_label.grid(row=STATS_COUNT_ROW, column=1, padx=10, pady=10)
 
-        self.No_count_label = tk.Label(main_frame, text="No Count: 0", font=("Arial", 14))
+        self.No_count_label = tk.Label(main_frame, text="No Counter: 0", font=("Arial", 14))
         self.No_count_label.grid(row=STATS_COUNT_ROW, column=2, padx=10, pady=10)
 
         self.Yes_Per_label = tk.Label(main_frame, text="0% Yes", font=("Arial", 14))
@@ -116,6 +133,15 @@ class YesNoGenerator:
 
         self.No_Per_label = tk.Label(main_frame, text="0% No", font=("Arial", 14))
         self.No_Per_label.grid(row=STATS_PERCENT_ROW, column=1, padx=10, pady=10)
+        # Reset label
+        self.reset_label = tk.Label(main_frame, text="", font=("Arial", 14))
+        self.reset_label.grid(row=STATS_PERCENT_ROW, column=2, padx=10, pady=10)
+
+        self.gen_per_sec_label = tk.Label(main_frame, text="0.00 Gener./sec", font=("Arial", 14))
+        self.gen_per_sec_label.grid(row=GPS_ROW, column=0, padx=10, pady=10)
+
+        self.reset_per_sec_label = tk.Label(main_frame, text="0.00 Reset/sec", font=("Arial", 14))
+        self.reset_per_sec_label.grid(row=GPS_ROW, column=1, padx=10, pady=10)
 
         # Separators
         separator1 = ttk.Separator(main_frame, orient='horizontal')
@@ -128,6 +154,8 @@ class YesNoGenerator:
         # Message
         self.print_message(self.welcome_msg, main_frame)
 
+        # Periodic updates
+        self.update_periodically(root)
 
 
         root.mainloop()
@@ -157,17 +185,30 @@ class YesNoGenerator:
         self.No_count_label.config(text=f"No Count: {self.counts['No']}")
         self.Yes_Per_label.config(text=f"{self.yes_per:.2f}% Yes")
         self.No_Per_label.config(text=f"{self.no_per:.2f}% No")
+           
 
         self.add_message(self.choose_msg())
+
+    def update_periodically(self, root):
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+        reset_elapsed_time = current_time - self.reset_start_time
+
+        if elapsed_time > 0 and self.counter > 0:
+            self.gen_per_sec = self.counter / elapsed_time
+            self.gen_per_sec_label.config(text=f"{self.gen_per_sec:.2f} Gener./sec")
+        if reset_elapsed_time > 0 and self.reset_counter > 0:
+            self.reset_per_sec = self.reset_counter / reset_elapsed_time
+            self.reset_per_sec_label.config(text=f"{self.reset_per_sec:.2f} Reset/sec")
+
+        root.after(self.update_interval, lambda: self.update_periodically(root))
+        
 
     def print_message(self, message, main_frame):
  
        text_frame = tk.Frame(main_frame)
        text_frame.grid(row=0, column=0, columnspan=3, pady=10, padx=10, sticky="nsew")
 
-    #    text_frame.columnconfigure(10, weight=10)
-    #    text_frame.rowconfigure(0, weight=1)
-       
        scrollbar = tk.Scrollbar(text_frame)
        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -182,14 +223,14 @@ class YesNoGenerator:
        self.message_text.insert(tk.END, message + self.msg_separator, "center")
             
     def choose_msg(self):
-        if self.counter >= 2 and self.yes_per == 50.0 and self.no_per == 50.0:
-            return "100. Perfectly balanced...\n...as all things should be."
-        
         chosen_msg = random.choice(self.messages)
         
+        if self.counter >= 2 and self.yes_per == 50.0:
+            chosen_msg = "100. Perfectly balanced...\n...as all things should be."
         if chosen_msg.startswith("28."):
             return "28. You have reset the generator %d times.\nBut what resets the reset counter?" % self.reset_counter
-        return chosen_msg
+        else:
+            return chosen_msg
 
     def add_message(self, text):
         if hasattr(self, 'message_text'):
@@ -198,21 +239,39 @@ class YesNoGenerator:
 
 
     def reset(self, msg, frame):
+      
         self.reset_counter += 1
         self.counter = 0
         self.counts = {"Yes": 0, "No": 0}
         self.output_label.config(text="")
         self.counter_label.config(text="Counter: 0")
-        self.Yes_count_label.config(text="Yes Count: 0")
-        self.No_count_label.config(text="No Count: 0")
+        self.Yes_count_label.config(text="Yes Counter: 0")
+        self.No_count_label.config(text="No Counter: 0")
         self.Yes_Per_label.config(text="0% Yes")
         self.No_Per_label.config(text="0% No")
         self.message_text.delete(1.0, tk.END)
-        self.print_message(msg, frame)
+        # self.print_message(msg, frame)
+        
+        if self.reset_counter == self.SHOW_RESET:
+            self.reset_flag = True
+            
+            nice_message = "69. \tNice...\n...now seriously, why do you keep resetting the generator?\nThe reset counter cannot be reset."
+            self.message_text.insert(tk.END, nice_message + self.msg_separator, "center")
+        else:
+            self.print_message(msg, frame)
 
+        if self.reset_flag:
+            self.reset_label.config(text=f"Reset Counter: {self.reset_counter}")
+        
+        # reset output window
         self.output_fg = "black"
         self.output_bg = "#ffffff"
         self.output_label.config(bg=self.output_bg, fg=self.output_fg)
+
+        # Reset timer
+        self.start_time = time.time() # TOTO MOZNO ZAKOMENTOVAT
+        self.gen_per_sec = 0 # TOTO MOZNO ZAKOMENTOVAT
+        self.gen_per_sec_label.config(text="0.00 Gener./sec")
 
 if __name__ == "__main__":
     YesNoGenerator().show_gui()
