@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import time
+import pyperclip
+from collections import deque
 
 class YesNoGenerator:
     def __init__(self):
@@ -15,7 +17,11 @@ class YesNoGenerator:
         self.reset_per_sec = 0
         self.start_time = time.time()
         self.reset_start_time = time.time()
-        self.update_interval = 500  # Update every 500ms
+        self.update_interval = 100  # Update every 100ms
+        self.reset_queue = deque()
+        self.sliding_window = 10 # window of 10 seconds
+        self.reset_queue_clear_threshold = 0
+        self.reset_decrese_flag = False
 
         self.reset_counter = 0
         self.SHOW_RESET = 69
@@ -192,16 +198,50 @@ class YesNoGenerator:
     def update_periodically(self, root):
         current_time = time.time()
         elapsed_time = current_time - self.start_time
-        reset_elapsed_time = current_time - self.reset_start_time
-
+        
+        # __________________________ #
+        # # # Generations per second #
         if elapsed_time > 0 and self.counter > 0:
             self.gen_per_sec = self.counter / elapsed_time
             self.gen_per_sec_label.config(text=f"{self.gen_per_sec:.2f} Gener./sec")
-        if reset_elapsed_time > 0 and self.reset_counter > 0:
-            self.reset_per_sec = self.reset_counter / reset_elapsed_time
-            self.reset_per_sec_label.config(text=f"{self.reset_per_sec:.2f} Reset/sec")
+        
+        # _____________________ #
+        # # # Resets per second #
+        while len(self.reset_queue) > 1 and (self.reset_queue[-1] - self.reset_queue[0]) > self.sliding_window:
+            self.reset_queue.popleft()  
+        # _________________________________ #
+        # # # Calculating Resets per second #
+        if self.reset_decrese_flag == False:
+            if len(self.reset_queue) > 1:
+                avg_reset_time = (self.reset_queue[-1] - self.reset_queue[0]) / (len(self.reset_queue) - 1)
+                if avg_reset_time > 0:
+                    self.reset_per_sec = 1 / avg_reset_time
+            else:
+                self.reset_per_sec = 0
+        # ______________________________________________ #
+        # # # decreasing Resets per second in inactivity #
+        self.reset_queue_clear_threshold += 1
+        # print(self.reset_queue_clear_threshold)
+        if self.reset_queue_clear_threshold >= 50 and len(self.reset_queue) > 0:  
+            self.reset_decrese_flag = True
+            self.reset_per_sec -= 0.319
+            # print("Reset per sec decreased to: ", self.reset_per_sec)
+            self.reset_queue_clear_threshold = 49
+            if self.reset_per_sec <= 0:
+                self.reset_per_sec = 0
+                self.reset_queue.clear()  
+                self.reset_decrese_flag = False
+
+        # if len(self.reset_queue) > 0: # removing oldest timestamp every periodical update 
+        #     self.reset_queue.popleft()
+
+
+
+        self.reset_per_sec_label.config(text=f"{self.reset_per_sec:.2f} Reset/sec")
 
         root.after(self.update_interval, lambda: self.update_periodically(root))
+
+        
         
 
     def print_message(self, message, main_frame):
@@ -251,6 +291,8 @@ class YesNoGenerator:
         self.No_Per_label.config(text="0% No")
         self.message_text.delete(1.0, tk.END)
         # self.print_message(msg, frame)
+        self.reset_queue_clear_threshold = 0
+        self.reset_decrese_flag = False
         
         if self.reset_counter == self.SHOW_RESET:
             self.reset_flag = True
@@ -263,6 +305,10 @@ class YesNoGenerator:
         if self.reset_flag:
             self.reset_label.config(text=f"Reset Counter: {self.reset_counter}")
         
+        self.reset_queue.append(time.time())
+        # print("Reset queue: ", self.reset_queue)
+
+
         # reset output window
         self.output_fg = "black"
         self.output_bg = "#ffffff"
