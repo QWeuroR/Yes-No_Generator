@@ -76,7 +76,7 @@ class YesNoGenerator:
             "23. Are you \"the 10th programmer\"?.",
             "24. If you are still reading this, you might be procrastinating. Just click \"GENERATE\" already!",
             "25. The Yes/No Generator is not a therapist, but it can help you make decisions.",
-            "26. Created by QWeuroR, Štetka Štetkovič and Bacil Muchomúrka",
+            "26. Created by QWeuroR, Štetka Štetkovič and Bacil Muchomůrka",
             "27. What is the purpose of \"RESET\" button?",
             "28. ",
             "29. Recommend this tool to your friends, they might be indecisive too!",
